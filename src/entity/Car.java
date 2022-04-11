@@ -337,11 +337,20 @@ public class Car extends Entity{
         g.setColor(temp);
     }
 
-    public void drawGearIndicator(){
+    public void drawGearIndicator(Graphics g){
         // box height, width
+        int width = 128;
+        int height = 64
 
         int x = Display.WIDTH - this.rpm_background_image.getWidth() - this.rpm_background_image.getWidth()/4;
         int y = Display.HEIGHT - this.rpm_background_image.getHeight() + this.rpm_meter_image.getHeight()/4;
+        
+        g.drawRectangle(x, y, width, height, null);
+        // text time
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+        RenderingHints.VALUE_ANTIALIAS_ON);
+        String gearState = "Gear %d".format(gearIdx);
+        g.drawString(gearState, x, y);
     }
 
     public void toggleEngine(){
