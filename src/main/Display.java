@@ -51,13 +51,13 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
     // ??? idk do this later
     public static int edgePad = (int) (Math.min(WIDTH, HEIGHT)*0.02);
     public String[] tileNames = new String[]{"grass.png", "road_12.png", "road_16.png", "road_20.png", "road_24.png",
-            "road_20V.png", "road_20_WS90.png", "road_20_SE90.png", "road_20_EN90.png", "road_20_NW90.png", "new_sand.png", "road_20_16.png"};
+            "road_20V.png", "road_20_ES90.png", "road_20_SW90.png", "road_20_WN90.png", "road_20_NE90.png", "new_sand.png", "road_20_16.png"};
 
     public static final Color background = new Color(30, 30, 30); // screen background color
     public static final Color text = new Color(170, 170, 170); // screen text color
     // flags
     // w, a, s, d, spacebar, i,         showSideMenu
-    boolean[] flags = new boolean[9];
+    boolean[] flags = new boolean[10];
 
     public Car car;
     public Track track;
@@ -251,42 +251,63 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
 //    boolean wKey = false, aKey = false, sKey = false, dKey = false;
 //    event flag #4
 //    boolean spacebar = false;
+    // event flag #9
+    // boolean debug
 
     @Override
     public void keyPressed(KeyEvent e) {
-        if(e.getKeyChar()=='w'){
+        // gas pedal
+        if(e.getKeyChar()=='w') {
             flags[0] = true;
-        }else if(e.getKeyChar() == 'a'){
+        }
+        // can't turn left and right simultaneously
+        // turn left
+        if(e.getKeyChar() == 'a') {
             flags[1] = true;
-        }else if(e.getKeyChar() == 's'){
-            flags[2] = true;
-        }else if(e.getKeyChar() == 'd'){
+        }
+        // turn right
+        else if(e.getKeyChar() == 'd') {
             flags[3] = true;
-        }else if(e.getKeyChar() == ' '){
+        }
+        // break
+        if(e.getKeyChar() == 's') {
+            flags[2] = true;
+        }
+        // handbrake (unused-content)
+        if(e.getKeyChar() == ' '){
             flags[4] = true;
         }
 
         // event flag #6 & flag #7
         // shift -> upShift, ctrl -> downShift
+        // can't upShift and downShift simultaneously
         if(e.getModifiersEx() == InputEvent.SHIFT_DOWN_MASK){
             flags[6] = true;
         }
-        if(e.getModifiersEx() == InputEvent.CTRL_DOWN_MASK){
+        else if(e.getModifiersEx() == InputEvent.CTRL_DOWN_MASK){
             flags[7] = true;
+        }
+        // debug flag, when a & d is pressed (opposite steering) and spacebar
+        if(flags[1] && flags[3] && flags[4]){
+            flags[9] = true;
         }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-        if(e.getKeyChar()=='w'){
+        if(e.getKeyChar()=='w') {
             flags[0] = false;
-        }else if(e.getKeyChar() == 'a'){
+        }
+        if(e.getKeyChar() == 'a') {
             flags[1] = false;
-        }else if(e.getKeyChar() == 's'){
+        }
+        if(e.getKeyChar() == 's') {
             flags[2] = false;
-        }else if(e.getKeyChar() == 'd'){
+        }
+        if(e.getKeyChar() == 'd') {
             flags[3] = false;
-        }else if(e.getKeyChar() == ' '){
+        }
+        if(e.getKeyChar() == ' '){
             flags[4] = false;
             car.resetHandbrake();
         }

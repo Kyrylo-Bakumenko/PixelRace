@@ -51,6 +51,9 @@ public class Car extends Entity{
     // bounding box
     int x1, y1, x2, y2;
 
+    // for debugging
+    boolean debug;
+
     // car qualities
     // mass Kg
     int mass = 790;
@@ -109,12 +112,15 @@ public class Car extends Entity{
         };
 
         this.engineOn = false;
+        this.debug = false;
     }
 
     public void render(Graphics g){
         drawTrail(g);
+        if(debug) renderDebugging(g);
         rotate(g);
         drawRpmMeter(g);
+        drawGearIndicator((Graphics2D) g);
     }
 
 //    public void accelerate(){
@@ -133,8 +139,7 @@ public class Car extends Entity{
         if(handbrake){
             angle -= Math.min(handbrakeLength/20.0, 2);
 //            angle -= 1;
-            handbrake();
-            drift(false);
+//            drift(false);
             return;
         }
         angle-=1;
@@ -147,46 +152,55 @@ public class Car extends Entity{
         if(handbrake){
             angle+=Math.min(handbrakeLength/20.0, 2);
 //            angle += 1;
-            handbrake();
-            drift(true);
+//            drift(true);
             return;
         }
         angle+=1;
     }
 
     public void handbrake(){
-        v *= (1-handbrakeLength/40.0/100.0);
-        if(v > 0) v -= 0.01;
+        v *= (1-handbrakeLength++/40.0/100.0);
+        if(v > 0) v -= 0.02;
     }
 
-    public void drift(boolean right){
-        handbrakeLength++;
-    }
+//    public void drift(boolean right){
+//        handbrakeLength++;
+//    }
 
     public void update(boolean[] flags){
+        // toggle engine ignition
         if(flags[5]){
             toggleEngine();
             flags[5] = false;
         }
-
+        // handle gas & brakes
         updateSpeed(flags[0], flags[2]);
-
+        // turning left
         if(flags[1]) turnLeft(flags[4]);
+        // turning right
         if(flags[3]) turnRight(flags[4]);
+        // handbrake (unused)
+        if(flags[4]) handbrake();
 
+        // upShift, reset flag
         if(flags[6]){
             shiftUp();
             flags[6] = false;
         }
+        // downShift, reset flag
         else if(flags[7]){
             shiftDown();
             flags[7] = false;
         }
+        // toggle debugger, reset flag
+        if(flags[9]){
+            debug = !debug;
+            flags[9] = false;
+        }
 
 //        updateRpm(flags[0], flags[2]);
+        // update car coordinates
         updatePosition();
-
-//        if((int)(cur_rpm) % 500 == 0) System.out.println("RPM: " + cur_rpm);
     }
 
     private void updateSpeed(boolean throttleUp, boolean throttleDown){
@@ -337,19 +351,21 @@ public class Car extends Entity{
         g.setColor(temp);
     }
 
-    public void drawGearIndicator(Graphics g){
+    public void drawGearIndicator(Graphics2D g){
         // box height, width
         int width = 128;
-        int height = 64
+        int height = 64;
 
         int x = Display.WIDTH - this.rpm_background_image.getWidth() - this.rpm_background_image.getWidth()/4;
         int y = Display.HEIGHT - this.rpm_background_image.getHeight() + this.rpm_meter_image.getHeight()/4;
         
-        g.drawRectangle(x, y, width, height, null);
+        g.drawRect(x, y, width, height);
         // text time
+        Font font = new Font("Tacoma", Font.BOLD, 32);
+        g.setFont(font);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
         RenderingHints.VALUE_ANTIALIAS_ON);
-        String gearState = "Gear %d".format(gearIdx);
+        String gearState = String.format("Gear %d", gearIdx);
         g.drawString(gearState, x, y);
     }
 
@@ -405,6 +421,21 @@ public class Car extends Entity{
         particles.removeIf(p -> !p.isActive());
 
         particles.forEach(p -> p.render(g));
+    }
+
+    public void renderDebugging(Graphics g){
+        int lineThickness = 4;
+        Color temp = g.getColor();
+        g.setColor(Color.BLACK);
+
+        for(int x = 0; x < Display.WIDTH; x+=Display.tileSize){
+            g.fillRect(x-lineThickness/2, 0, lineThickness, Display.HEIGHT);
+        }
+        for(int y = 0; y < Display.HEIGHT; y+=Display.tileSize){
+            g.fillRect(0, y-lineThickness/2, Display.WIDTH, lineThickness);
+        }
+
+        g.setColor(temp);
     }
 
     public String toString(){
