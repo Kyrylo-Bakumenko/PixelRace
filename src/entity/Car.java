@@ -168,6 +168,8 @@ public class Car extends Entity{
 //    }
 
     public void update(boolean[] flags){
+        // debugging
+        if(debug) System.out.println(toString(flags));
         // toggle engine ignition
         if(flags[5]){
             toggleEngine();
@@ -244,7 +246,7 @@ public class Car extends Entity{
     }
 
     public void resetHandbrake(){
-        System.out.println("HANDBRAKE: " + handbrakeLength);
+//        System.out.println("HANDBRAKE: " + handbrakeLength);
         this.handbrakeLength = 0;
     }
 
@@ -438,11 +440,18 @@ public class Car extends Entity{
         g.setColor(temp);
     }
 
-    public String toString(){
+    public String toString(boolean[] flags){
         StringBuilder sb = new StringBuilder();
         sb.append("Position: ").append(worldX).append(", ").append(worldY).append("\n");
         sb.append("Velocity: ").append(v).append("\n");
         sb.append("Angle: ").append(angle);
+        for(int i=0; i<flags.length; i++){
+            sb.append("\n");
+            sb.append("Flag ").append(i).append(" : ");
+            if(flags[i]) sb.append("True");
+            else sb.append("False");
+        }
+
         return sb.toString();
     }
 }

@@ -237,14 +237,14 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
         flags[8] = showSideMenu(e);
     }
 
-    // event flags
-    // boolean toggleEngine = false; flag#5
-
     @Override
     public void keyTyped(KeyEvent e) {
-        if(e.getKeyChar()=='i'){
+        // event flag #5
+        // ignition
+        if(e.getKeyChar() == 'i'){
             flags[5] = true;
         }
+
     }
 
     // event flags #0-#3
@@ -256,25 +256,27 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
 
     @Override
     public void keyPressed(KeyEvent e) {
+        // debug
+        if(flags[9]) System.out.println("\n\n" + "Keys pressed: " + e.getKeyCode() + ", " + e.getKeyChar() + "\nModifiers: " + e.getModifiersEx());
         // gas pedal
-        if(e.getKeyChar()=='w') {
+        if(e.getKeyCode() == 'W') {
             flags[0] = true;
         }
         // can't turn left and right simultaneously
         // turn left
-        if(e.getKeyChar() == 'a') {
+        if(e.getKeyCode() == 'A') {
             flags[1] = true;
         }
         // turn right
-        else if(e.getKeyChar() == 'd') {
+        else if(e.getKeyCode() == 'D') {
             flags[3] = true;
         }
         // break
-        if(e.getKeyChar() == 's') {
+        if(e.getKeyCode() == 'S') {
             flags[2] = true;
         }
         // handbrake (unused-content)
-        if(e.getKeyChar() == ' '){
+        if(e.getKeyCode() == ' '){
             flags[4] = true;
         }
 
@@ -282,11 +284,12 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
         // shift -> upShift, ctrl -> downShift
         // can't upShift and downShift simultaneously
         if(e.getModifiersEx() == InputEvent.SHIFT_DOWN_MASK){
-            flags[6] = true;
+                flags[6] = true;
         }
         else if(e.getModifiersEx() == InputEvent.CTRL_DOWN_MASK){
-            flags[7] = true;
+                flags[7] = true;
         }
+
         // debug flag, when a & d is pressed (opposite steering) and spacebar
         if(flags[1] && flags[3] && flags[4]){
             flags[9] = true;
@@ -294,20 +297,21 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
     }
 
     @Override
+
     public void keyReleased(KeyEvent e) {
-        if(e.getKeyChar()=='w') {
+        if(e.getKeyCode() == 'W') {
             flags[0] = false;
         }
-        if(e.getKeyChar() == 'a') {
+        if(e.getKeyCode() == 'A') {
             flags[1] = false;
         }
-        if(e.getKeyChar() == 's') {
+        if(e.getKeyCode() == 'S') {
             flags[2] = false;
         }
-        if(e.getKeyChar() == 'd') {
+        if(e.getKeyCode() == 'D') {
             flags[3] = false;
         }
-        if(e.getKeyChar() == ' '){
+        if(e.getKeyCode() == ' '){
             flags[4] = false;
             car.resetHandbrake();
         }
