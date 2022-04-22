@@ -359,7 +359,7 @@ public class Car extends Entity{
         int height = 64;
 
         int x = Display.WIDTH - this.rpm_background_image.getWidth() - this.rpm_background_image.getWidth()/4;
-        int y = Display.HEIGHT - this.rpm_background_image.getHeight() + this.rpm_meter_image.getHeight()/4;
+        int y = Display.HEIGHT - this.rpm_background_image.getHeight() + this.rpm_meter_image.getHeight()/2;
         
         g.drawRect(x, y, width, height);
         // text time
@@ -367,7 +367,7 @@ public class Car extends Entity{
         g.setFont(font);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
         RenderingHints.VALUE_ANTIALIAS_ON);
-        String gearState = String.format("Gear %d", gearIdx);
+        String gearState = String.format("Gear %d", gearIdx + 1);
         g.drawString(gearState, x, y);
     }
 

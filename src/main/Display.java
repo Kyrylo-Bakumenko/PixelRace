@@ -50,8 +50,15 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
     public final int worldHeight = tileSize * maxWorldRow;
     // ??? idk do this later
     public static int edgePad = (int) (Math.min(WIDTH, HEIGHT)*0.02);
-    public String[] tileNames = new String[]{"grass.png", "road_12.png", "road_16.png", "road_20.png", "road_24.png",
-            "road_20V.png", "road_20_ES90.png", "road_20_SW90.png", "road_20_WN90.png", "road_20_NE90.png", "new_sand.png", "road_20_16.png"};
+    public String[] tileNames = new String[]{
+            //    0            1               2             3              4
+            "grass.png", "road_12.png", "road_16.png", "road_20.png", "road_24.png",
+            //    5                   6                   7                   8                   9               10              11
+            "road_20V.png", "road_20_ES90.png", "road_20_SW90.png", "road_20_WN90.png", "road_20_NE90.png", "new_sand.png", "road_20_16.png",
+            //      12                  13              14                  15              16                  17              18              19
+            "barrier_top.png", "barrier_c1.png", "barrier_c2.png", "barrier_c3.png", "barrier_vr.png", "barrier_c4.png", "barrier_c5.png", "barrier_c6.png",
+            //      20                  21              22                  23              24                  25              26                  27
+            "barrier_bot.png", "barrier_c7.png", "barrier_c8.png", "barrier_c9.png", "barrier_vl.png", "barrier_c10.png", "barrier_c11.png", "barrier_c12.png"};
 
     public static final Color background = new Color(30, 30, 30); // screen background color
     public static final Color text = new Color(170, 170, 170); // screen text color
@@ -198,7 +205,6 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        System.out.println(car);
         // if menu is visible
         if(flags[8]){
             // and a button was clicked
