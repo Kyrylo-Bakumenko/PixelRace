@@ -7,6 +7,7 @@ public class Particle {
     private Color[] cycle;
     private int idx;
     private boolean active;
+    // global
     private int x, y;
 
     public Particle(){
@@ -35,12 +36,12 @@ public class Particle {
         }
     }
 
-    public void render(Graphics g){
+    public void render(Graphics g, Car car){
         if(!active) return;
 
         Color temp = g.getColor();
         g.setColor(cycle[idx]);
-        g.drawRect(this.x, this.y, 2, 2);
+        g.drawRect(car.screenX + (int)(this.x - car.worldX), car.screenY + (int)(this.y - car.worldY), 2, 2);
         g.setColor(temp);
 
         iterate();

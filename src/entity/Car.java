@@ -389,29 +389,35 @@ public class Car extends Entity{
     }
 
     private void drawTrail(Graphics g){
-        if((int)(cur_rpm) % 10 == 0){
+        // probability of trail appearing
+        if(( (int)(cur_rpm) < 4000 && (int)(cur_rpm) % 5 == 0 ) || Math.random()*(cur_rpm/1_000) < 1){
             int lengthOfCar = 48;
-            int distanceBetweenWheels = 24;
+            int distanceBetweenWheels = 28;
 
-            int px = (int)(screenX + car_image.getWidth()/2);
+            int px = (int)(worldX + car_image.getWidth()/2);
             // car is asymmetrical for some reason, -4 offset
-            int py = (int)(screenY + car_image.getHeight()/2) - 4;
+            int py = (int)(worldY + car_image.getHeight()/2);
             px -= (Math.cos(Math.toRadians(angle)) * lengthOfCar/2);
             py -= (Math.sin(Math.toRadians(angle)) * lengthOfCar/2);
+            // add variation to tire skip locations
+            double trailLocVar = 5.0;
+            px += (Math.random()*trailLocVar) - trailLocVar/2;
+            py += (Math.random()*trailLocVar) - trailLocVar/2;
 
             // wheel coords for first pixel
             int px1 = (int) (px + Math.sin(Math.toRadians(angle)) * distanceBetweenWheels/2);
             int py1 = (int) (py - Math.cos(Math.toRadians(angle)) * distanceBetweenWheels/2);
             // wheel coords for second pixel
-            int px2 = (int) (px - Math.sin(Math.toRadians(angle)) * distanceBetweenWheels/2);
-            int py2 = (int) (py + Math.cos(Math.toRadians(angle)) * distanceBetweenWheels/2);
+            int px2 = (int) (px - Math.sin(Math.toRadians(angle)) * (distanceBetweenWheels - 2)/2);
+            int py2 = (int) (py + Math.cos(Math.toRadians(angle)) * (distanceBetweenWheels - 6)/2);
 
+            int trailDurVar = 100;
             Particle p1 = new Particle(px1, py1);
-            p1.setCycleToGradient(Color.DARK_GRAY, 100);
+            p1.setCycleToGradient(Color.DARK_GRAY, 50 + (int)(Math.random()*trailDurVar));
             p1.setActive(true);
 
             Particle p2 = new Particle(px2, py2);
-            p2.setCycleToGradient(Color.DARK_GRAY, 100);
+            p2.setCycleToGradient(Color.DARK_GRAY, 50 + (int)(Math.random()*trailDurVar));
             p2.setActive(true);
 
             particles.add(p1);
@@ -422,7 +428,7 @@ public class Car extends Entity{
 
         particles.removeIf(p -> !p.isActive());
 
-        particles.forEach(p -> p.render(g));
+        particles.forEach(p -> p.render(g, this));
     }
 
     public void renderDebugging(Graphics g){
