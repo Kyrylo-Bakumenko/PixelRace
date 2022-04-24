@@ -5,6 +5,7 @@ import main.Display;
 import javax.imageio.ImageIO;
 import javax.sound.sampled.*;
 import java.awt.*;
+import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -61,7 +62,7 @@ public class Car extends Entity{
     double maxThrust = 7900.0;
     // gear ratios
     double[] gearRatios;
-    // index of selected gear, 8 foward gears, -1 is reverse?, neutral is absence of gearing -> raw_rpm;
+    // index of selected gear, 1-8 forward gears, 0 for neutral, and -1 in reverse, neutral is absence of gearing -> raw_rpm;
     int gearIdx;
     boolean engineOn;
 
@@ -168,8 +169,8 @@ public class Car extends Entity{
 //    }
 
     public void update(boolean[] flags){
-        // debugging
-        if(debug) System.out.println(toString(flags));
+        // debugging, 100fps * 10% ~~ 10 flag-states call per second
+        if(debug && Math.random()<0.1) System.out.println(toString(flags));
         // toggle engine ignition
         if(flags[5]){
             toggleEngine();
@@ -354,21 +355,19 @@ public class Car extends Entity{
     }
 
     public void drawGearIndicator(Graphics2D g){
-        // box height, width
-        int width = 128;
-        int height = 64;
-
         int x = Display.WIDTH - this.rpm_background_image.getWidth() - this.rpm_background_image.getWidth()/4;
-        int y = Display.HEIGHT - this.rpm_background_image.getHeight() + this.rpm_meter_image.getHeight()/2;
-        
-        g.drawRect(x, y, width, height);
+        int y = Display.HEIGHT - this.rpm_background_image.getHeight()/4;
+
         // text time
         Font font = new Font("Tacoma", Font.BOLD, 32);
         g.setFont(font);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
         RenderingHints.VALUE_ANTIALIAS_ON);
+        AffineTransform affinetransform = new AffineTransform();
+        FontRenderContext frc = new FontRenderContext(affinetransform,true,true);
         String gearState = String.format("Gear %d", gearIdx + 1);
-        g.drawString(gearState, x, y);
+        int textHeight = (int)(font.getStringBounds(gearState, frc).getHeight());
+        g.drawString(gearState, x, y - textHeight);
     }
 
     public void toggleEngine(){
@@ -390,7 +389,7 @@ public class Car extends Entity{
 
     private void drawTrail(Graphics g){
         // probability of trail appearing
-        if(( (int)(cur_rpm) < 4000 && (int)(cur_rpm) % 5 == 0 ) || Math.random()*(cur_rpm/1_000) < 1){
+        if((( (int)(cur_rpm) < 4000 && (int)(cur_rpm) % 5 == 0 ) || Math.random()*(cur_rpm/1_000) < 1) && v > 0.1){
             int lengthOfCar = 48;
             int distanceBetweenWheels = 28;
 

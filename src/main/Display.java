@@ -166,8 +166,9 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
         g.fillRect(0,0,WIDTH, HEIGHT);
 
 //        track.render(g);
-        tileM.render(g);
+        tileM.render(g, 0);
         car.render(g);
+        tileM.render(g, 1);
         renderSideMenu(g);
 
         g.dispose();

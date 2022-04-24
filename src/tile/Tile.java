@@ -10,6 +10,7 @@ public class Tile {
 
     public BufferedImage image;
     public boolean collision = false;
+    final int layer;
 
     public Tile(String filePath, int scale){
         try {
@@ -18,6 +19,17 @@ public class Tile {
         }catch (Exception e){
             e.printStackTrace();
         }
+        this.layer = 0;
+    }
+
+    public Tile(String filePath, int scale, int layer){
+        try {
+            BufferedImage image = ImageIO.read(new File(filePath));
+            this.image = scale(image, scale);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        this.layer = layer;
     }
 
     private static BufferedImage scale(BufferedImage before, double scale) {
