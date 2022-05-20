@@ -64,13 +64,14 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
     public static final Color text = new Color(170, 170, 170); // screen text color
     // flags
     // w, a, s, d, spacebar, i,         showSideMenu
-    boolean[] flags = new boolean[10];
+    public boolean[] flags = new boolean[10];
 
     public Car car;
     public Track track;
     public Button[] sideMenu;
     public BufferedImage selectedTrack;
     TileManager tileM = new TileManager(this);
+    CollisionChecker cChecker = new CollisionChecker(this);
 
     public Display() {
         this.frame = new JFrame();
@@ -175,7 +176,7 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
         bs.show();
     }
     private void update(){
-        car.update(flags);
+        car.update(flags, cChecker);
         if(car.getRunning()) midiTest.playNote(car.getRPM());
     }
 
@@ -259,7 +260,7 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
 //    event flag #4
 //    boolean spacebar = false;
     // event flag #9
-    // boolean debug
+    boolean debug = false;
 
     @Override
     public void keyPressed(KeyEvent e) {
@@ -300,6 +301,7 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
         // debug flag, when a & d is pressed (opposite steering) and spacebar
         if(flags[1] && flags[3] && flags[4]){
             flags[9] = true;
+            debug = !debug;
         }
     }
 
@@ -350,6 +352,10 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
         for(Button button : sideMenu)
             if(button.contains(e)) return button;
         return null;
+    }
+
+    public boolean getDebug(){
+        return debug;
     }
 
     public void renderSideMenu(Graphics g){

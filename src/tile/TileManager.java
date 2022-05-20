@@ -8,8 +8,8 @@ import java.io.*;
 public class TileManager {
 
     Display gp;
-    Tile[] tile;
-    int[][][] mapLayers;
+    public Tile[] tile;
+    public int[][][] mapLayers;
 
     public TileManager(Display gp){
         this.gp = gp;
@@ -28,6 +28,7 @@ public class TileManager {
 
             String filePath = "res/imgs/tiles/" + gp.tileNames[i];
             tile[i] = new Tile(filePath, Display.scale);
+            if(i >= 12) tile[i].collision = true;
         }
     }
 
@@ -148,7 +149,12 @@ public class TileManager {
                     worldY + gp.tileSize> gp.car.worldY - gp.car.screenY &&
                     worldY - gp.tileSize < gp.car.worldY + gp.car.screenY) {
 
+                // draw tile
                 g.drawImage(tile[tileNum].image, screenX, screenY, Display.tileSize, Display.tileSize, null);
+                // draw hitboxes if collision tile
+                if(gp.getDebug() && tile[tileNum].collision) {
+                    tile[tileNum].barrier.debugRender(g, screenX, screenY);
+                }
             }
             worldCol++;
 

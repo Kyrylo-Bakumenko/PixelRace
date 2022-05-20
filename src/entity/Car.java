@@ -1,6 +1,8 @@
 package entity;
 
+import main.CollisionChecker;
 import main.Display;
+import main.Rotater;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.*;
@@ -25,8 +27,13 @@ import java.util.ArrayList;
 //    <GearRatio7th value="1.05" />
 //    <GearRatio8th value="0.93" />
 
+// to do:
+// collision
+// make info_graphics appear above final track layer (currently it is tied to car object which is under the collision layer)
+// add particles to collision
+// change trail to vary based off of recent angle changes
 
-public class Car extends Entity{
+public class Car extends Entity implements Cloneable{
     // images
     BufferedImage car_image;
     BufferedImage rpm_background_image;
@@ -36,12 +43,10 @@ public class Car extends Entity{
     // center in screen
     public final int screenX;
     public final int screenY;
-    // velocity
-    double v;
     // top speed
     double vMax;
-    // angle
-    double angle;
+    // top speed, reverse
+    double vMin;
     // RPM passed through gears
     double cur_rpm;
     // RPM at which the car idles
@@ -49,8 +54,6 @@ public class Car extends Entity{
     int max_rpm;
     // handbrake length
     int handbrakeLength = 0;
-    // bounding box
-    int x1, y1, x2, y2;
 
     // for debugging
     boolean debug;
@@ -65,6 +68,7 @@ public class Car extends Entity{
     // index of selected gear, 1-8 forward gears, 0 for neutral, and -1 in reverse, neutral is absence of gearing -> raw_rpm;
     int gearIdx;
     boolean engineOn;
+    static final int NEUTRAL_GEAR_IDX = 1;
 
     // Physics constants
     double g = 9.806;
@@ -77,13 +81,24 @@ public class Car extends Entity{
     ArrayList<Particle> particles = new ArrayList<>();
 
 
-    public Car() throws IOException {
+    public Car() throws IOException{
         this.car_image = ImageIO.read(new File("res/imgs/cars/red_car.png"));
         this.rpm_meter_image = ImageIO.read(new File("res/imgs/ui/rpm_meter.png"));
         this.rpm_background_image = ImageIO.read(new File("res/imgs/ui/rpm_outline.png"));
 
         this.screenX = Display.WIDTH/2 - car_image.getWidth()/2;
         this.screenY = Display.HEIGHT/2 - car_image.getHeight()/2;
+
+        // collision
+        // car pos relative to img: 28, 48
+        // car actuall dim: (71, 27)
+        solidArea = new Rectangle(28, 48, 71, 27);
+        x1 = 28;
+        x2 = x1 + 71;
+        y1 = 48;
+        y2 = y1 + 27;
+        mx = car_image.getWidth()/2.0;
+        my = car_image.getHeight()/2.0;
 
         setDefaultValues();
     }
@@ -94,22 +109,25 @@ public class Car extends Entity{
         this.worldX = Display.tileSize*6;
         this.worldY = Display.tileSize*3.25;
         this.v = 0.0;
-        this.vMax = 6.0;
+        this.vMax = 7.0;
+        this.vMin = -1.0;
         this.angle = 0.0;
         this.cur_rpm = 0.0;
         this.idle_rpm = 3000.0;
         this.max_rpm = 13000;
 
-        this.gearIdx = 0;
+        this.gearIdx = 1;
         this.gearRatios = new double[]{
-                2.8,
-                2.29,
-                1.93,
-                1.583,
-                1.375,
-                1.19,
-                1.05,
-                0.93
+                2.8, // reverse
+                5, // neutral
+                2.8, // 1st
+                2.29, // 2nd
+                1.93, // 3rd
+                1.583, // 4th
+                1.375, // 5th
+                1.19, // 6th
+                1.05, // 7th
+                0.93 // 8th
         };
 
         this.engineOn = false;
@@ -168,9 +186,9 @@ public class Car extends Entity{
 //        handbrakeLength++;
 //    }
 
-    public void update(boolean[] flags){
+    public void update(boolean[] flags, CollisionChecker cChecker){
         // debugging, 100fps * 10% ~~ 10 flag-states call per second
-        if(debug && Math.random()<0.1) System.out.println(toString(flags));
+//        if(debug && Math.random()<0.1) System.out.println(toString(flags));
         // toggle engine ignition
         if(flags[5]){
             toggleEngine();
@@ -201,27 +219,52 @@ public class Car extends Entity{
             flags[9] = false;
         }
 
-//        updateRpm(flags[0], flags[2]);
+        // check for collisions
+        collisionOn = false;
+        cChecker.checkTile(this);
+
+        // if collision is false, entity can move
+//        if(!collisionOn)
+            updatePosition();
+
+
+        //        updateRpm(flags[0], flags[2]);
         // update car coordinates
-        updatePosition();
     }
 
     private void updateSpeed(boolean throttleUp, boolean throttleDown){
         updateRpm(throttleUp, throttleDown);
 
         // apply braking force
-        if(throttleDown) v -= 0.06;
+        if(throttleDown)
+            if(v - 0.06 > 0) v -= 0.06;
 
-        v += ( (enginePower()-drag())/(double)(mass) )/100.0;
-        if(v < 0) v = 0;
+        // engine
+        if(gearIdx > NEUTRAL_GEAR_IDX) v += torque(gearIdx)/(double)(mass)/100.0;
+        else if(gearIdx < NEUTRAL_GEAR_IDX) v -= torque(gearIdx)/(double)(mass)/100.0;
+
+        // drag
+        if(v > 0) v = Math.max(0, v-drag()/(double)(mass)/100.0);
+        if(v < 0) v = Math.min(0, v+drag()/(double)(mass)/100.0);
+
+
+        if(v < vMin) v = vMin;
         if(v > vMax) v = vMax;
 
 //        System.out.println("Velocity: " + v + ", Power: " + enginePower() + ", Drag: " + drag() + ", RPM: " + cur_rpm);
     }
 
-    private void updatePosition(){
-//        this.x += (Math.cos(Math.toRadians(angle)) * v);
-//        this.y += (Math.sin(Math.toRadians(angle)) * v);
+    private double torque(int gear){
+        // max speed dependent on gear / tire-size
+        // this velocity manipulation combined with RPM logic acts as pseudo-torque
+
+        /// *** /// THIS IS THE LOGIC INCENTIVIZING DIFFERENT GEARS /// *** ///
+        return enginePower()/(1.0 + gearRatios[gear]);
+        /// *** /// *** /// *** /// *** / *** / *** /// *** /// *** /// *** ///
+    }
+
+    public void updatePosition(){
+        // up is down, lulw
         this.worldX += (Math.cos(Math.toRadians(angle)) * v);
         this.worldY += (Math.sin(Math.toRadians(angle)) * v);
         this.v *= 0.995; // fraction between 1 & 0.99, 0.99 at max speed (drag increases with velocity)
@@ -290,6 +333,8 @@ public class Car extends Entity{
 
         gearIdx++;
         cur_rpm *= (gearRatios[gearIdx]/gearRatios[gearIdx-1]);
+        // never above 13000
+        if(cur_rpm > max_rpm) cur_rpm = max_rpm;
     }
 
     public void shiftDown(){
@@ -298,6 +343,8 @@ public class Car extends Entity{
 
         gearIdx--;
         cur_rpm *= (gearRatios[gearIdx]/gearRatios[gearIdx+1]);
+        // never above 13000
+        if(cur_rpm > max_rpm) cur_rpm = max_rpm;
     }
 
     // returns F of friction (rolling + air) in Newtons
@@ -312,12 +359,16 @@ public class Car extends Entity{
     }
 
     public void updateRpm(boolean throttleUp, boolean throttleDown){
+        // if engine is not on, we cannot rev
+        if(!engineOn) return;
         // make sure we dont have below idle rpm with running engine
-        if(engineOn && cur_rpm < idle_rpm) cur_rpm = idle_rpm;
+        if(cur_rpm < idle_rpm) cur_rpm = idle_rpm;
 
         // rpm change due to braking or acceleration
         if(throttleUp) cur_rpm += 20 * gearRatios[gearIdx];
         if(throttleDown) cur_rpm -= 40 * gearRatios[gearIdx];
+        // reverse is a 'safety-only' gear
+        if(gearIdx < NEUTRAL_GEAR_IDX) cur_rpm = Math.min(cur_rpm, idle_rpm);
         // RPM decay due to internal friction
         cur_rpm -= 10;
         // randomness induced from throttle sensitivity
@@ -352,6 +403,8 @@ public class Car extends Entity{
         g.setColor(Color.BLACK);
         g.fillRect(x + bar_fill, y, rpm_meter_image.getWidth() - bar_fill - 16, 16);
         g.setColor(temp);
+
+        g.drawRect((int)worldX, (int)worldY, 2, 2);
     }
 
     public void drawGearIndicator(Graphics2D g){
@@ -365,7 +418,10 @@ public class Car extends Entity{
         RenderingHints.VALUE_ANTIALIAS_ON);
         AffineTransform affinetransform = new AffineTransform();
         FontRenderContext frc = new FontRenderContext(affinetransform,true,true);
-        String gearState = String.format("Gear %d", gearIdx + 1);
+        String gearState;
+        if(gearIdx > 1) gearState = String.format("Gear %d", gearIdx - 1);
+        else if(gearIdx == 1) gearState = "Gear N";
+        else gearState = "Gear R";
         int textHeight = (int)(font.getStringBounds(gearState, frc).getHeight());
         g.drawString(gearState, x, y - textHeight);
     }
@@ -430,19 +486,49 @@ public class Car extends Entity{
         particles.forEach(p -> p.render(g, this));
     }
 
+    private int[] boundingTile(double x, double y){
+        int col = (int) (x/Display.tileSize);
+        int row = (int) (y/Display.tileSize);
+
+        return new int[]{(int) (col*Display.tileSize - worldX + screenX), (int) (row*Display.tileSize - worldY + screenY)};
+    }
+
     public void renderDebugging(Graphics g){
-        int lineThickness = 4;
-        Color temp = g.getColor();
-        g.setColor(Color.BLACK);
+        // highlight current tile
+        Graphics2D gg = (Graphics2D) g.create();
+        gg.setColor(Color.RED);
+        // TL corner
+        double[] rotatedCoords = Rotater.rotateWithAnchor(worldX + solidArea.x, worldY + solidArea.y,
+                worldX + car_image.getWidth()/2.0, worldY + car_image.getHeight()/2.0, angle);
+        int[] tileCoords = boundingTile(rotatedCoords[0], rotatedCoords[1]);
+        gg.drawRect(tileCoords[0], tileCoords[1], Display.tileSize, Display.tileSize);
+        // TR corner
+        rotatedCoords = Rotater.rotateWithAnchor(worldX + solidArea.x + solidArea.width, worldY + solidArea.y,
+                worldX + car_image.getWidth()/2.0, worldY + car_image.getHeight()/2.0, angle);
+        tileCoords = boundingTile(rotatedCoords[0], rotatedCoords[1]);
+        gg.drawRect(tileCoords[0], tileCoords[1], Display.tileSize, Display.tileSize);
+        // BL corner
+        rotatedCoords = Rotater.rotateWithAnchor(worldX + solidArea.x, worldY + solidArea.y + solidArea.height,
+                worldX + car_image.getWidth()/2.0, worldY + car_image.getHeight()/2.0, angle);
+        tileCoords = boundingTile(rotatedCoords[0], rotatedCoords[1]);
+        gg.drawRect(tileCoords[0], tileCoords[1], Display.tileSize, Display.tileSize);
+        // BR corner
+        rotatedCoords = Rotater.rotateWithAnchor(worldX + solidArea.x + solidArea.width, worldY + solidArea.y + solidArea.height,
+                worldX + car_image.getWidth()/2.0, worldY + car_image.getHeight()/2.0, angle);
+        tileCoords = boundingTile(rotatedCoords[0], rotatedCoords[1]);
+        gg.drawRect(tileCoords[0], tileCoords[1], Display.tileSize, Display.tileSize);
+        gg.dispose();
 
-        for(int x = 0; x < Display.WIDTH; x+=Display.tileSize){
-            g.fillRect(x-lineThickness/2, 0, lineThickness, Display.HEIGHT);
-        }
-        for(int y = 0; y < Display.HEIGHT; y+=Display.tileSize){
-            g.fillRect(0, y-lineThickness/2, Display.WIDTH, lineThickness);
-        }
 
-        g.setColor(temp);
+        // draw collision bounds for car
+        Graphics2D g2d = (Graphics2D) g.create();
+        g2d.setColor(Color.BLACK);
+        Rectangle rect = new Rectangle(screenX + solidArea.x, screenY + solidArea.y, solidArea.width, solidArea.height);
+
+        g2d.rotate(Math.toRadians(angle), screenX + car_image.getWidth()/2.0, screenY + car_image.getHeight()/2.0);
+        g2d.draw(rect);
+
+        g2d.dispose();
     }
 
     public String toString(boolean[] flags){
@@ -458,5 +544,16 @@ public class Car extends Entity{
         }
 
         return sb.toString();
+    }
+
+    @Override
+    public Car clone() {
+        try {
+            Car clone = (Car) super.clone();
+            // TODO: copy mutable state here, so the clone can't change the internals of the original
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 }
