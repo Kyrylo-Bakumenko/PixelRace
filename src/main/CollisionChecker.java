@@ -20,23 +20,23 @@ public class CollisionChecker {
         double vx = Math.cos(Math.toRadians(entity.angle));
         double vy = Math.sin(Math.toRadians(entity.angle));
         // determine reflection direction off of bounding rectangle shape
-        double normalAngle = barrier.findCollisionNormal(x, y);
+        double normalAngle = barrier.findCollisionNormal((int)x, (int)y, (int)(entity.worldX + entity.mx), (int)(entity.worldY + entity.my));
         switch ((int) (normalAngle / 90)){
-            case 0: System.out.println("E");
-            case 1: System.out.println("S");
-            case 2: System.out.println("W");
-            case 3: System.out.println("N");
+//            case 0: System.out.println("E");
+//            case 1: System.out.println("S");
+//            case 2: System.out.println("W");
+//            case 3: System.out.println("N");
         }
-        double nx = Math.max(Math.abs(vx), 0.01) * Math.cos(Math.toRadians(normalAngle)) / barrier.stiffness;
-        double ny = Math.max(Math.abs(vy), 0.01) * Math.sin(Math.toRadians(normalAngle)) / barrier.stiffness;
-        System.out.println("NX: " + nx + ", NY: " + ny);
+        double nx = Math.abs(vx) * Math.cos(Math.toRadians(normalAngle)) / barrier.stiffness;
+        double ny = Math.abs(vy) * Math.sin(Math.toRadians(normalAngle)) / barrier.stiffness;
+//        System.out.println("NX: " + nx + ", NY: " + ny);
         // modify velocity with normal
         vx += nx;
         vy += ny;
         // update entity angle
         entity.angle = Barrier.angleOfVector(vx, vy);
         // apply velocity penalty due to collision
-        entity.v = 0.95 * entity.v;
+        entity.v = Math.pow(entity.v, 0.75);
         // set collision flag to true
         entity.collisionOn = true;
     }
@@ -53,7 +53,7 @@ public class CollisionChecker {
         // translate bounds polygon into world-space for determining intersection
         Polygon p = gp.tileM.tile[tileNum].barrier.bounds;
         p.translate(row*Display.tileSize, col*Display.tileSize);
-        Rectangle r = entity.solidArea;
+        Rectangle r = entity.solidArea.getBounds();
         r.translate((int) entity.worldX, (int) entity.worldY);
         if(p.intersects(r)){
             applyCollision(entity, x, y, gp.tileM.tile[tileNum].barrier);
@@ -65,6 +65,15 @@ public class CollisionChecker {
     }
 
     public void checkTile(Entity entity){
+        // is there currently a collision
+        // TL corner
+        if(checkPointCollision(entity, entity.worldX + entity.x1, entity.worldY + entity.y1)) return;
+        // TR corner
+        if(checkPointCollision(entity, entity.worldX + entity.x2, entity.worldY + entity.y1)) return;
+        // BL corner
+        if(checkPointCollision(entity, entity.worldX + entity.x1, entity.worldY + entity.y2)) return;
+        // BR corner
+        if(checkPointCollision(entity, entity.worldX + entity.x2, entity.worldY + entity.y2)) return;
         // see if collision will occur should the car move
         double xOffset = (Math.cos(Math.toRadians(entity.angle)) * entity.v);
         double yOffset = (Math.sin(Math.toRadians(entity.angle)) * entity.v);
@@ -79,6 +88,108 @@ public class CollisionChecker {
         if(checkPointCollision(entity, entity.worldX + entity.x2 + xOffset, entity.worldY + entity.y2 + yOffset)) return;
     }
 
+//    private double polygonIntersection(Polygon p1, Polygon p2){
+//        Polygon union = new Polygon(p1.xpoints, p1.ypoints, p1.npoints);
+//        for(int i = 0; i < p2.npoints; i++)
+//            union.addPoint(p2.xpoints[i], p2.ypoints[i]);
+//
+//        double areaDiff = polygonArea(union) - polygonArea(p1) - polygonArea(p2);
+//        System.out.println(areaDiff);
+//
+//        return areaDiff < 0 ? areaDiff : 0;
+//    }
+
+//    private boolean polygonIntersection(Polygon p1, Polygon p2){
+//        for(int i = 1; i < p1.npoints; i++){
+//            int x0 = p1.xpoints[i-1];
+//            int x1 = p1.xpoints[i];
+//            int y0 = p1.ypoints[i-1];
+//            int y1 = p1.ypoints[i];
+//            for(int j = 1; j < p2.npoints; j++){
+//                int x2 = p2.xpoints[j-1];
+//                int x3 = p2.xpoints[j];
+//                int y2 = p2.ypoints[j-1];
+//                int y3 = p2.ypoints[j];
+//                if(linesIntersect(x0, y0, x1, y1, x2, y2, x3, y3)) return true;
+//            }
+//        }
+//
+//        return false;
+//    }
+
+    public static boolean linesIntersect(int x0, int y0, int x1, int y1, int x2, int y2, int x3, int y3){
+        if( (x1-x0 == 0 && x3-x2 == 0) || (y1-y0 == 0 && y3-y2 == 0)){
+            //parallel
+            return false;
+        }
+        if(x1 - x0 == 0)
+            return x2 <= x0 && x0 <= x3 || x3 <= x0 && x0 <= x2;
+        if(x3 - x2 == 0)
+            return x0 <= x2 && x2 <= x1 || x1 <= x2  && x2 <= x0;
+        double x = (y2-y0)/( (y1-y0)/(double)(x1-x0) - (y3-y2)/(double)(x3-x2) );
+        System.out.println((x >= x0 && x <= x1 || x >= x1 && x <= x0) && (x >= x2 && x <= x3 || x >= x3 && x <= x2));
+        return (x >= x0 && x <= x1 || x >= x1 && x <= x0) && (x >= x2 && x <= x3 || x >= x3 && x <= x2);
+    }
+
+    private boolean polygonIntersection(Polygon p1, Polygon p2){
+        for(int i = 0; i < p2.npoints; i++)
+            if(p1.contains(p2.xpoints[i], p2.ypoints[i])) return true;
+
+        return false;
+    }
+
+    private Polygon rotatePolygon(Polygon p, double anchorx, double anchory, double theta){
+        int[] xpoints = new int[p.npoints];
+        int[] ypoints = new int[p.npoints];
+
+        for(int i = 0; i < p.npoints; i++) {
+            double[] rotatedCoords = Rotater.rotateWithAnchor(p.xpoints[i], p.ypoints[i], anchorx, anchory, theta);
+            xpoints[i] = (int)rotatedCoords[0];
+            ypoints[i] = (int)rotatedCoords[1];
+        }
+
+        return new Polygon(xpoints, ypoints, p.npoints);
+    }
+
+    private double polygonArea(Polygon p){
+        if(p.npoints < 1) return 0;
+        double area = 0;
+        for(int i = 0; i+1 < p.npoints/2 ; i++){
+            // quadrilateral ABCD
+            // find area by vectors
+            // area = 1/2 (AB x AC + AC x AD)
+            int ABx = p.xpoints[i+1] - p.xpoints[i];
+            int ABy = p.ypoints[i+1] - p.ypoints[i];
+            int ACx = p.xpoints[p.npoints-1 -(i+1)] - p.xpoints[i];
+            int ACy = p.ypoints[p.npoints-1 -(i+1)] - p.ypoints[i];
+            int ADx = p.xpoints[p.npoints-1 -i] - p.xpoints[i];
+            int ADy = p.ypoints[p.npoints-1 -i] - p.ypoints[i];
+
+            area += 0.5 * (Math.abs(ABx * ACy - ABy * ACx) + Math.abs(ACx * ADy - ACy * ADx));
+        }
+        return area;
+    }
+
+    public boolean intersects(int testx, int testy, int x1, int y1, int x2, int y2) {
+        if ((testy >= y1 && testy >= y2) || (testy <= y1 && testy <= y2)) return false;
+        int intersectX = (x1 + ((testy - y1) * (x2 - x1)) / (y2 - y1));
+        System.out.println("test: " + testx + " tgt: " + intersectX);
+        return intersectX > testx;
+    }
+
+    public boolean contains(Polygon p, int testx, int testy){
+        if(!p.contains(testx, testy)) return false;
+        int intersections = 0;
+        for(int i = 1; i < p.npoints; i++) {
+            int x1 = p.xpoints[i-1];
+            int x2 = p.xpoints[i];
+            int y1 = p.ypoints[i-1];
+            int y2 = p.ypoints[i];
+            if (intersects(testx, testy, x1, y1, x2, y2)) intersections++;
+        }
+        return intersections % 2 == 1;
+    }
+
 //    public void checkTile(Entity entity){
 //        int eLeftWorldX = (int) (entity.worldX + entity.solidArea.x);
 //        int eRightWorldX = (int) (entity.worldX + entity.solidArea.x + entity.solidArea.width);
@@ -86,7 +197,7 @@ public class CollisionChecker {
 //        int eBottomWorldY = (int) (entity.worldY + entity.solidArea.y + entity.solidArea.height);
 //
 //        int eLeftCol = eLeftWorldX / Display.tileSize;
-//        int eRightCol =  eRightWorldX / Display.tileSize;
+//        sssssssint eRightCol =  eRightWorldX / Display.tileSize;
 //        int eTopRow = eTopWorldY / Display.tileSize;
 //        int eBottomRow = eBottomWorldY / Display.tileSize;
 //

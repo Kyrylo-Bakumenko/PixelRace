@@ -1,5 +1,7 @@
 package entity;
 
+import main.CollisionChecker;
+
 import java.awt.*;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
@@ -8,7 +10,7 @@ public class Barrier {
 
     public Polygon bounds;
     public double stiffness;
-    private static final double DEFAULT_STIFFNESS = 1.0;
+    private static final double DEFAULT_STIFFNESS = 0.99;
     public ArrayList<Particle> sparks;
     private double[] normalAngles;
 
@@ -54,6 +56,33 @@ public class Barrier {
         double angle = Math.toDegrees(Math.acos(cos));
         if(uy < 0) angle = 360 - angle;
         return angle;
+    }
+
+    public static double angleBetweenVectors(double vx, double vy, double ux, double uy){
+        double num = vx * ux + vy * uy;
+        double den = (Math.sqrt(Math.pow(vx, 2) + Math.pow(vy, 2)) * (Math.sqrt(Math.pow(ux, 2) + Math.pow(uy, 2))));
+        double cos = num / den;
+        return Math.toDegrees(Math.acos(cos));
+    }
+
+    public double findCollisionNormal(int x, int y, int centerx, int centery) {
+        // the index for getting normal to line that is closest to point
+        int npoints = this.bounds.npoints;
+        int x1 = this.bounds.xpoints[npoints - 1];
+        int y1 = this.bounds.ypoints[npoints - 1];
+
+        // for every barrier-side, see if this intersects entity point-to-center cord
+        for (int i = 0; i < npoints; i++) {
+            int x2 = this.bounds.xpoints[i];
+            int y2 = this.bounds.ypoints[i];
+
+            if(CollisionChecker.linesIntersect(x, y, centerx, centery, x1, y1, x2, y2))
+                return normalAngles[i];
+
+            x1 = this.bounds.xpoints[i];
+            y1 = this.bounds.ypoints[i];
+        }
+        return findCollisionNormal(x, y);
     }
 
     public double findCollisionNormal(double x, double y) {
@@ -113,7 +142,7 @@ public class Barrier {
         return Math.abs(dot) / Math.sqrt(len_sq);
     }
 
-    private static Polygon RectangleToPolygon(Rectangle rect) {
+    public static Polygon RectangleToPolygon(Rectangle rect) {
         int[] xpoints = {rect.x, rect.x + rect.width, rect.x + rect.width, rect.x};
         int[] ypoints = {rect.y, rect.y, rect.y + rect.height, rect.y + rect.height};
         return new Polygon(xpoints, ypoints, 4);

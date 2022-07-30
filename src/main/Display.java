@@ -44,8 +44,8 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
     public static int WIDTH = 1526;//128*12
     public static int HEIGHT = 1152;//128*9
     // world settings
-    public final int maxWorldCol = 21;
-    public final int maxWorldRow = 16;
+    public static final int maxWorldCol = 21;
+    public static final int maxWorldRow = 16;
     public final int worldWidth = tileSize * maxWorldCol;
     public final int worldHeight = tileSize * maxWorldRow;
     // ??? idk do this later
@@ -72,6 +72,7 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
     public BufferedImage selectedTrack;
     TileManager tileM = new TileManager(this);
     CollisionChecker cChecker = new CollisionChecker(this);
+    LapTimer lapTimer = new LapTimer();
 
     public Display() {
         this.frame = new JFrame();
@@ -170,13 +171,15 @@ public class Display extends Canvas implements Runnable, MouseListener, MouseMot
         tileM.render(g, 0);
         car.render(g);
         tileM.render(g, 1);
-        renderSideMenu(g);
+        lapTimer.renderTimer(g);
+//        renderSideMenu(g);
 
         g.dispose();
         bs.show();
     }
     private void update(){
         car.update(flags, cChecker);
+        lapTimer.update(car);
         if(car.getRunning()) midiTest.playNote(car.getRPM());
     }
 

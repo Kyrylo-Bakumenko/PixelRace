@@ -92,7 +92,11 @@ public class Car extends Entity implements Cloneable{
         // collision
         // car pos relative to img: 28, 48
         // car actuall dim: (71, 27)
-        solidArea = new Rectangle(28, 48, 71, 27);
+        int[] xpoints = new int[]{28, 36, 36, 47, 47, 71, 71, 76, 76, 87, 87, 95, 95, 99, 99, 95, 95, 87, 87, 76, 76,
+                                  71, 71, 47, 47, 36, 36, 28, 28};
+        int[] ypoints = new int[]{52, 52, 48, 48, 52, 52, 55, 55, 48, 48, 52, 52, 60, 60, 63, 63, 71, 71, 75, 75, 68,
+                                  68, 71, 71, 75, 75, 71 ,71, 52};
+        this.solidArea = new Polygon(xpoints, ypoints, xpoints.length);
         x1 = 28;
         x2 = x1 + 71;
         y1 = 48;
@@ -403,8 +407,6 @@ public class Car extends Entity implements Cloneable{
         g.setColor(Color.BLACK);
         g.fillRect(x + bar_fill, y, rpm_meter_image.getWidth() - bar_fill - 16, 16);
         g.setColor(temp);
-
-        g.drawRect((int)worldX, (int)worldY, 2, 2);
     }
 
     public void drawGearIndicator(Graphics2D g){
@@ -414,8 +416,7 @@ public class Car extends Entity implements Cloneable{
         // text time
         Font font = new Font("Tacoma", Font.BOLD, 32);
         g.setFont(font);
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-        RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         AffineTransform affinetransform = new AffineTransform();
         FontRenderContext frc = new FontRenderContext(affinetransform,true,true);
         String gearState;
@@ -498,22 +499,23 @@ public class Car extends Entity implements Cloneable{
         Graphics2D gg = (Graphics2D) g.create();
         gg.setColor(Color.RED);
         // TL corner
-        double[] rotatedCoords = Rotater.rotateWithAnchor(worldX + solidArea.x, worldY + solidArea.y,
+        Rectangle rectBounds = solidArea.getBounds();
+        double[] rotatedCoords = Rotater.rotateWithAnchor(worldX + rectBounds.x, worldY + rectBounds.y,
                 worldX + car_image.getWidth()/2.0, worldY + car_image.getHeight()/2.0, angle);
         int[] tileCoords = boundingTile(rotatedCoords[0], rotatedCoords[1]);
         gg.drawRect(tileCoords[0], tileCoords[1], Display.tileSize, Display.tileSize);
         // TR corner
-        rotatedCoords = Rotater.rotateWithAnchor(worldX + solidArea.x + solidArea.width, worldY + solidArea.y,
+        rotatedCoords = Rotater.rotateWithAnchor(worldX + rectBounds.x + rectBounds.width, worldY + rectBounds.y,
                 worldX + car_image.getWidth()/2.0, worldY + car_image.getHeight()/2.0, angle);
         tileCoords = boundingTile(rotatedCoords[0], rotatedCoords[1]);
         gg.drawRect(tileCoords[0], tileCoords[1], Display.tileSize, Display.tileSize);
         // BL corner
-        rotatedCoords = Rotater.rotateWithAnchor(worldX + solidArea.x, worldY + solidArea.y + solidArea.height,
+        rotatedCoords = Rotater.rotateWithAnchor(worldX + rectBounds.x, worldY + rectBounds.y + rectBounds.height,
                 worldX + car_image.getWidth()/2.0, worldY + car_image.getHeight()/2.0, angle);
         tileCoords = boundingTile(rotatedCoords[0], rotatedCoords[1]);
         gg.drawRect(tileCoords[0], tileCoords[1], Display.tileSize, Display.tileSize);
         // BR corner
-        rotatedCoords = Rotater.rotateWithAnchor(worldX + solidArea.x + solidArea.width, worldY + solidArea.y + solidArea.height,
+        rotatedCoords = Rotater.rotateWithAnchor(worldX + rectBounds.x + rectBounds.width, worldY + rectBounds.y + rectBounds.height,
                 worldX + car_image.getWidth()/2.0, worldY + car_image.getHeight()/2.0, angle);
         tileCoords = boundingTile(rotatedCoords[0], rotatedCoords[1]);
         gg.drawRect(tileCoords[0], tileCoords[1], Display.tileSize, Display.tileSize);
@@ -522,11 +524,12 @@ public class Car extends Entity implements Cloneable{
 
         // draw collision bounds for car
         Graphics2D g2d = (Graphics2D) g.create();
-        g2d.setColor(Color.BLACK);
-        Rectangle rect = new Rectangle(screenX + solidArea.x, screenY + solidArea.y, solidArea.width, solidArea.height);
+        g2d.setColor(Color.YELLOW);
 
         g2d.rotate(Math.toRadians(angle), screenX + car_image.getWidth()/2.0, screenY + car_image.getHeight()/2.0);
-        g2d.draw(rect);
+        g2d.translate(screenX, screenY);
+        g2d.setStroke(new BasicStroke(6));
+        g2d.drawPolygon(solidArea);
 
         g2d.dispose();
     }

@@ -3,6 +3,8 @@ package tile;
 import main.Display;
 
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.AffineTransform;
 import java.io.*;
 
 public class TileManager {
@@ -21,6 +23,7 @@ public class TileManager {
 //        loadMap("res/maps/map01.txt");
         loadMap("res/maps/map01_layer0.txt", 0);
         loadMap("res/maps/map01_layer1.txt", 1);
+
     }
 
     public void getTileImage() {
@@ -164,5 +167,4 @@ public class TileManager {
             }
         }
     }
-
 }

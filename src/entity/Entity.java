@@ -16,10 +16,11 @@ public class Entity {
     public int spriteCounter = 0;
     public int spriteNum = 1;
 
-    public Rectangle solidArea;
+    public Polygon solidArea;
     // bounding box
     public int x1, y1, x2, y2;
     // mid point (for rotations)
     public double mx, my;
     public boolean collisionOn = false;
+//    public long lastCollision;
 }
